@@ -24,7 +24,11 @@ import {
   CheckCircle,
   Error,
   Schedule,
-  Info
+  Info,
+  Public,
+  Link,
+  Storage,
+  Layers
 } from '@mui/icons-material'
 import { useDropzone } from 'react-dropzone'
 import { shapefileApi, UploadResponse, ImportStatus } from '../store/api/shapefileApi'
@@ -44,6 +48,7 @@ const ShapefileUpload: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [selectedImport, setSelectedImport] = useState<ImportStatus | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [uploadMode, setUploadMode] = useState<'database' | 'geoserver' | 'geoserver-importer'>('database')
 
   // Load existing imports on component mount
   React.useEffect(() => {
@@ -88,7 +93,15 @@ const ShapefileUpload: React.FC = () => {
     ))
 
     try {
-      const response = await shapefileApi.uploadShapefile(fileItem.file)
+      let response: UploadResponse
+      
+      if (uploadMode === 'geoserver') {
+        response = await shapefileApi.uploadShapefileWithGeoServer(fileItem.file)
+      } else if (uploadMode === 'geoserver-importer') {
+        response = await shapefileApi.uploadToGeoServerImporter(fileItem.file)
+      } else {
+        response = await shapefileApi.uploadShapefile(fileItem.file)
+      }
       
       setFiles(prev => prev.map(f => 
         f.id === fileItem.id 
@@ -131,6 +144,16 @@ const ShapefileUpload: React.FC = () => {
     }
   }
 
+  const publishToGeoServer = async (importId: number) => {
+    try {
+      const response = await shapefileApi.publishToGeoServer(importId)
+      console.log('Published to GeoServer:', response)
+      await loadImports() // Reload to get updated status
+    } catch (error) {
+      console.error('Failed to publish to GeoServer:', error)
+    }
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
@@ -166,6 +189,58 @@ const ShapefileUpload: React.FC = () => {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Upload shapefile packages as ZIP files. Each ZIP should contain .shp, .shx, .dbf, and .prj files.
       </Typography>
+
+      {/* Upload Mode Selection */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Upload Mode
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Button
+            variant={uploadMode === 'database' ? 'contained' : 'outlined'}
+            startIcon={<Storage />}
+            onClick={() => setUploadMode('database')}
+            sx={{ flex: 1, minWidth: 200, flexDirection: 'column', py: 2 }}
+          >
+            <Typography variant="h6">Database Only</Typography>
+            <Typography variant="caption" sx={{ mt: 0.5 }}>
+              Upload to PostgreSQL database
+            </Typography>
+          </Button>
+          <Button
+            variant={uploadMode === 'geoserver' ? 'contained' : 'outlined'}
+            startIcon={<Layers />}
+            onClick={() => setUploadMode('geoserver')}
+            sx={{ flex: 1, minWidth: 200, flexDirection: 'column', py: 2 }}
+          >
+            <Typography variant="h6">Database + GeoServer</Typography>
+            <Typography variant="caption" sx={{ mt: 0.5 }}>
+              Upload to database and publish to GeoServer
+            </Typography>
+          </Button>
+          <Button
+            variant={uploadMode === 'geoserver-importer' ? 'contained' : 'outlined'}
+            startIcon={<Public />}
+            onClick={() => setUploadMode('geoserver-importer')}
+            sx={{ flex: 1, minWidth: 200, flexDirection: 'column', py: 2 }}
+          >
+            <Typography variant="h6">GeoServer Importer</Typography>
+            <Typography variant="caption" sx={{ mt: 0.5 }}>
+              Direct upload using GeoServer Importer Plugin
+            </Typography>
+          </Button>
+        </Box>
+        <Box sx={{ mt: 2, p: 1, bgcolor: 'info.light', borderRadius: 1 }}>
+          <Typography variant="body2" color="info.contrastText">
+            {uploadMode === 'database' 
+              ? 'Selected: Database Only - Files will be imported to PostgreSQL database'
+              : uploadMode === 'geoserver'
+              ? 'Selected: Database + GeoServer - Files will be imported to database and automatically published to GeoServer'
+              : 'Selected: GeoServer Importer - Files will be uploaded directly to GeoServer using Importer Plugin'
+            }
+          </Typography>
+        </Box>
+      </Paper>
 
       {/* Upload Area */}
       <Paper
@@ -204,7 +279,7 @@ const ShapefileUpload: React.FC = () => {
               onClick={uploadAllFiles}
               disabled={loading || files.every(f => f.status !== 'pending')}
             >
-              Upload All
+              {uploadMode === 'geoserver-importer' ? 'Upload to GeoServer' : 'Upload All'}
             </Button>
           </Box>
           
@@ -300,6 +375,27 @@ const ShapefileUpload: React.FC = () => {
                     >
                       View Details
                     </Button>
+                    {importItem.status === 'success' && !importItem.published_to_geoserver && (
+                      <Button
+                        size="small"
+                        startIcon={<Public />}
+                        onClick={() => publishToGeoServer(importItem.id)}
+                        color="primary"
+                      >
+                        Publish to GeoServer
+                      </Button>
+                    )}
+                    {importItem.published_to_geoserver && (
+                      <Button
+                        size="small"
+                        startIcon={<Link />}
+                        href={importItem.geoserver_wms_url}
+                        target="_blank"
+                        color="success"
+                      >
+                        View WMS
+                      </Button>
+                    )}
                     <IconButton
                       onClick={() => deleteImport(importItem.id)}
                       color="error"
@@ -361,6 +457,31 @@ const ShapefileUpload: React.FC = () => {
                   {selectedImport.table_info.srid && (
                     <Typography variant="body2">
                       SRID: {selectedImport.table_info.srid}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+              
+              {selectedImport.published_to_geoserver && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2">GeoServer Information:</Typography>
+                  <Typography variant="body2">
+                    Layer: {selectedImport.geoserver_layer}
+                  </Typography>
+                  {selectedImport.geoserver_wms_url && (
+                    <Typography variant="body2">
+                      WMS URL: 
+                      <Link href={selectedImport.geoserver_wms_url} target="_blank" rel="noopener">
+                        {selectedImport.geoserver_wms_url}
+                      </Link>
+                    </Typography>
+                  )}
+                  {selectedImport.geoserver_wfs_url && (
+                    <Typography variant="body2">
+                      WFS URL: 
+                      <Link href={selectedImport.geoserver_wfs_url} target="_blank" rel="noopener">
+                        {selectedImport.geoserver_wfs_url}
+                      </Link>
                     </Typography>
                   )}
                 </Box>
