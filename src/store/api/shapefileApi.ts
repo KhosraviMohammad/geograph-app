@@ -18,6 +18,8 @@ export interface ImportStatus {
   table_info?: {
     columns: string[][]
     row_count: number
+    geometry_type?: string
+    srid?: number
   }
 }
 

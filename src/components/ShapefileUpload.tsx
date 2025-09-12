@@ -353,6 +353,16 @@ const ShapefileUpload: React.FC = () => {
                   <Typography variant="body2">
                     Columns: {selectedImport.table_info.columns.length}
                   </Typography>
+                  {selectedImport.table_info.geometry_type && (
+                    <Typography variant="body2">
+                      Geometry Type: {selectedImport.table_info.geometry_type}
+                    </Typography>
+                  )}
+                  {selectedImport.table_info.srid && (
+                    <Typography variant="body2">
+                      SRID: {selectedImport.table_info.srid}
+                    </Typography>
+                  )}
                 </Box>
               )}
             </Box>
