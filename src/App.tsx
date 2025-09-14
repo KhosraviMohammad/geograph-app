@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import SimplePage from './pages/SimplePage'
 import ShapefileUploadPage from './pages/ShapefileUploadPage'
 import LayersListPage from './pages/LayersListPage'
+import MapPage from './pages/MapPage'
 
 function App() {
   const navigate = useNavigate()
@@ -33,8 +34,15 @@ function App() {
           <Button 
             color="inherit" 
             onClick={() => navigate('/layers')}
+            sx={{ mr: 2 }}
           >
             Layers List
+          </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => navigate('/map')}
+          >
+            Map
           </Button>
         </Toolbar>
       </AppBar>
@@ -44,6 +52,7 @@ function App() {
           <Route path="/" element={<SimplePage />} />
           <Route path="/upload" element={<ShapefileUploadPage />} />
           <Route path="/layers" element={<LayersListPage />} />
+          <Route path="/map" element={<MapPage />} />
         </Routes>
       </Container>
     </Box>
