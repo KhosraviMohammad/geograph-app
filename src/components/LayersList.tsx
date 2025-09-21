@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Typography,
@@ -19,23 +20,22 @@ import {
   Alert,
   CircularProgress,
   Tooltip,
-  Link,
   Card,
   CardContent,
-  Grid,
-  Divider
+  Grid
 } from '@mui/material'
 import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
   Publish as PublishIcon,
-  Unpublish as UnpublishIcon,
   Refresh as RefreshIcon,
-  OpenInNew as OpenInNewIcon
+  OpenInNew as OpenInNewIcon,
+  Map as MapIcon
 } from '@mui/icons-material'
 import { shapefileApi, ImportStatus } from '../store/api/shapefileApi'
 
 const LayersList: React.FC = () => {
+  const navigate = useNavigate()
   const [imports, setImports] = useState<ImportStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -107,6 +107,10 @@ const LayersList: React.FC = () => {
   const handleViewDetails = (importItem: ImportStatus) => {
     setSelectedImport(importItem)
     setDetailsOpen(true)
+  }
+
+  const handleViewOnMap = (importItem: ImportStatus) => {
+    navigate(`/map?layerId=${importItem.id}`)
   }
 
   const getStatusColor = (status: string) => {
@@ -211,6 +215,16 @@ const LayersList: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Box display="flex" gap={1}>
+                    <Tooltip title="View on Map">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleViewOnMap(importItem)}
+                        color="primary"
+                      >
+                        <MapIcon />
+                      </IconButton>
+                    </Tooltip>
+                    
                     <Tooltip title="View Details">
                       <IconButton
                         size="small"
@@ -324,26 +338,34 @@ const LayersList: React.FC = () => {
                       )}
                       {selectedImport.geoserver_wms_url && (
                         <Box mt={1}>
-                          <Link
+                          <Button
+                            component="a"
                             href={selectedImport.geoserver_wms_url}
                             target="_blank"
                             rel="noopener"
                             startIcon={<OpenInNewIcon />}
+                            size="small"
+                            variant="outlined"
+                            sx={{ textDecoration: 'none' }}
                           >
                             WMS Preview
-                          </Link>
+                          </Button>
                         </Box>
                       )}
                       {selectedImport.geoserver_wfs_url && (
                         <Box mt={1}>
-                          <Link
+                          <Button
+                            component="a"
                             href={selectedImport.geoserver_wfs_url}
                             target="_blank"
                             rel="noopener"
                             startIcon={<OpenInNewIcon />}
+                            size="small"
+                            variant="outlined"
+                            sx={{ textDecoration: 'none' }}
                           >
                             WFS Data
-                          </Link>
+                          </Button>
                         </Box>
                       )}
                     </CardContent>
