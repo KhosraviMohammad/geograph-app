@@ -68,6 +68,8 @@ const CesiumMap = () => {
         timeline={false}
         animation={false}
         baseLayerPicker={false}
+        // @ts-ignore
+        imageryProvider={false}
         fullscreenButton={false}
         geocoder={false}
         homeButton={false}
