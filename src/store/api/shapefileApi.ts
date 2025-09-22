@@ -37,6 +37,18 @@ export interface ImportList {
   }>
 }
 
+export interface GeoServerUserCreate {
+  username: string
+  password: string
+  enabled?: boolean
+}
+
+export interface GeoServerUserResponse {
+  success: boolean
+  message: string
+  username?: string
+}
+
 export const shapefileApi = {
   // Upload shapefile as zip
   uploadShapefile: async (file: File): Promise<UploadResponse> => {
@@ -197,6 +209,24 @@ export const shapefileApi = {
     if (!response.ok) {
       const errorData = await response.json()
       throw new Error(errorData.error || 'Failed to get GeoServer layer info')
+    }
+
+    return response.json()
+  },
+
+  // Create GeoServer user
+  createGeoServerUser: async (userData: GeoServerUserCreate): Promise<GeoServerUserResponse> => {
+    const response = await fetch(`${SHAPEFILE_API_BASE}geoserver-user/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to create GeoServer user')
     }
 
     return response.json()

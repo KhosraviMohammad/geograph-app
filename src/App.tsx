@@ -5,6 +5,7 @@ import SimplePage from './pages/SimplePage'
 import ShapefileUploadPage from './pages/ShapefileUploadPage'
 import LayersListPage from './pages/LayersListPage'
 import MapPage from './pages/MapPage'
+import GeoServerUserPage from './pages/GeoServerUserPage'
 
 function App() {
   const navigate = useNavigate()
@@ -41,8 +42,15 @@ function App() {
           <Button 
             color="inherit" 
             onClick={() => navigate('/map')}
+            sx={{ mr: 2 }}
           >
             Map
+          </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => navigate('/geoserver-user')}
+          >
+            GeoServer User
           </Button>
         </Toolbar>
       </AppBar>
@@ -53,6 +61,7 @@ function App() {
           <Route path="/upload" element={<ShapefileUploadPage />} />
           <Route path="/layers" element={<LayersListPage />} />
           <Route path="/map" element={<MapPage />} />
+          <Route path="/geoserver-user" element={<GeoServerUserPage />} />
         </Routes>
       </Container>
     </Box>
